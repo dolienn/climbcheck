@@ -1,0 +1,40 @@
+# Backend
+backend/target/
+*.class
+# (uwaga: backend/.mvn/ NIE jest ignorowany — maven-wrapper.properties musi
+# trafiać do repo, bo ./mvnw w CI wymaga tego pliku; jar ignoruje backend/.gitignore)
+
+# Frontend
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+frontend/references/
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/uploads/projects/*
+!backend/uploads/projects/.gitkeep
+
+# Docs
+FAZA*.md
+FAZY.md
+
+# Freebuff local tooling
+.freebuff/

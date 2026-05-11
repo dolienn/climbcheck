@@ -1,0 +1,3 @@
+ALTER TABLE lp_snapshot
+    ADD COLUMN tier VARCHAR(16),
+    ADD COLUMN rank VARCHAR(8);

@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: climbcheck-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import: optional:file:../.env[.properties]
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  # the winrate column of the ranking is computed from league-v4 (wins/losses of the current
+  # season) — exactly what the LoL client shows; zero extra Riot API calls
+  lp-snapshot:
+    enabled: true
+    # snapshot every 2h (12 per day, ~1 league-v4 call per player) — builds the LP Progression
+    # Trends history faster; saved only when LP/rank change
+    cron: "0 0 */2 * * *"
+    # retention: once a day removes snapshots older than 90 days (the chart shows max 30 days)
+    cleanup:
+      enabled: true
+      cron: "0 12 4 * * *"
+      max-age-days: 90d
+    retry:
+      max-attempts: 3
+      base-delay-ms: 1000
+      max-delay-ms: 30000
+  match-cache:
+    # in-memory cache of match-v5 responses (Caffeine): played matches are immutable,
+    # so expanding a matches row reads from memory instead of hitting Riot on
+    # every refresh (saves the dev-key rate limit)
+    match-ttl: 60m
+    match-ids-ttl: 10m
+  rate-limit:
+    # protecting our own API from dashboard-token scraping: sliding window per IP
+    # (X-Forwarded-For from nginx or remoteAddr); dashboard creation has its own,
+    # lower pool, because every POST generates a new token
+    enabled: true
+    window: 60s
+    max-requests-per-ip: 120
+    dashboard-create-max: 10

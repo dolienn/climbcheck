@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+
+  jpa:
+    show-sql: false
+
+riot:
+  api-key: ${RIOT_API_KEY}
+
+logging:
+  level:
+    org.springframework: WARN
