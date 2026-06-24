@@ -1,0 +1,379 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  # Manual redeploy from the Actions tab (also runs tests — deploy requires green CI)
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend — build + mvn test
+    runs-on: ubuntu-latest
+    # RiotApiClient reads the key via @Value("${riot.api-key}") when the context
+    # starts, and contextLoads boots the full context — without the variable
+    # the context would not start. Set the RIOT_API_KEY secret in Settings → Secrets.
+    env:
+      RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: lp_leaderboard
+          POSTGRES_USER: lp_user
+          POSTGRES_PASSWORD: lp_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lp_user"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Postgres on 5432 with the same credentials as application-dev.yml,
+      # so contextLoads (Flyway + JPA) works without overrides.
+      - name: Build + tests (mvn test)
+        working-directory: backend
+        run: ./mvnw test
+
+      - name: Publish backend test badge
+        working-directory: backend
+        run: |
+          total=$(grep -h 'Tests run:' target/surefire-reports/*.txt 2>/dev/null \
+            | sed 's/.*Tests run: *\([0-9]*\).*/\1/' \
+            | awk '{s+=$1} END {print s+0}' || true)
+          printf '{"schemaVersion":1,"label":"backend tests","message":"%s","color":"4ade80"}' "$total" \
+            > "$GITHUB_WORKSPACE/badge-backend.json"
+          echo "Backend badge: $(cat "$GITHUB_WORKSPACE/badge-backend.json")"
+
+      - name: Upload backend badge
+        uses: actions/upload-artifact@v7
+        with:
+          name: badge-backend
+          path: badge-backend.json
+          if-no-files-found: error
+
+      - name: Upload surefire reports (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend — build + ng test
+    runs-on: ubuntu-latest
+    steps:
+      # frontend is a submodule — it requires its own repo (dolienn/climbcheck-frontend).
+      # GITHUB_TOKEN only has access to the repo the workflow runs in, so with a private
+      # frontend repo you must set the GH_PAT secret (a PAT with read access to the frontend);
+      # with a public repo the default token suffices (fallback github.token).
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Production build
+        working-directory: frontend
+        run: npm run build
+
+      # Vitest + jsdom — runs headless, no browser needed.
+      - name: Unit tests + publish badge
+        working-directory: frontend
+        run: |
+          output=$(npx ng test --watch=false 2>&1)
+          status=$?
+          echo "$output" | tail -12
+          # vitest emits ANSI color codes in CI (between "Tests" and the count) — strip them first
+          plain=$(printf '%s' "$output" | sed -r 's/\x1B\[[0-9;]*[mK]//g')
+          # the pipeline ends with head (exit 0); || true guards the assignment anyway
+          total=$(echo "$plain" | grep -Eo 'Tests[[:space:]]+[0-9]+ passed' | grep -Eo '[0-9]+' | head -1 || true)
+          [ -n "$total" ] || total=0
+          printf '{"schemaVersion":1,"label":"frontend tests","message":"%s","color":"ffb86c"}' "$total" \
+            > "$GITHUB_WORKSPACE/badge-frontend.json"
+          echo "Frontend badge: $(cat "$GITHUB_WORKSPACE/badge-frontend.json")"
+          exit "$status"
+
+      - name: Upload frontend badge
+        uses: actions/upload-artifact@v7
+        with:
+          name: badge-frontend
+          path: badge-frontend.json
+          if-no-files-found: error
+
+  e2e:
+    name: E2E — Playwright full flow
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: lp_leaderboard
+          POSTGRES_USER: lp_user
+          POSTGRES_PASSWORD: lp_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lp_user"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      # The e2e backend starts via ./mvnw — the pom pins Java 21 (Spring Boot 4),
+      # while the runner has 17 by default; without this the job will not start.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            e2e/package-lock.json
+
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: E2E dependencies + browser
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # e2e does not hit the real Riot — RIOT_BASE_URL points to the local mock
+      # (e2e/mock-riot-server.mjs), so the Riot key is not needed.
+      - name: E2E tests + publish badge
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/lp_leaderboard
+        run: |
+          set -o pipefail
+          if bash e2e/run.sh 2>&1 | tee /tmp/e2e.log; then
+            # strip ANSI color codes before parsing the "N passed" summary;
+            # || true guards the pipeline in case the summary format ever changes
+            count=$(sed -r 's/\x1B\[[0-9;]*[mK]//g' /tmp/e2e.log | grep -Eo '[0-9]+ passed' | tail -1 | grep -Eo '[0-9]+' || true)
+            [ -n "$count" ] || count=0
+            printf '{"schemaVersion":1,"label":"e2e tests","message":"%s","color":"7ad1fe"}' "$count" \
+              > "$GITHUB_WORKSPACE/badge-e2e.json"
+            echo "E2E badge: $(cat "$GITHUB_WORKSPACE/badge-e2e.json")"
+          fi
+
+      - name: Upload e2e badge
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: badge-e2e
+          path: badge-e2e.json
+          if-no-files-found: error
+
+      - name: Upload Playwright report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+
+  # ----- Auto-updated test-count badges (shields.io endpoint badges) -----
+  # Each test job publishes its count as a badge JSON artifact; this job assembles
+  # them on the orphan `badges` branch (bootstrapped with the v1.0.0 values), which
+  # shields.io reads via raw.githubusercontent. If the branch is ever deleted, recreate
+  # it from any commit: three JSON files matching the shields endpoint schema.
+  # NOTE: the repo must be public for shields.io to fetch and render these badges.
+  badges:
+    name: Badges — refresh test counts
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    needs: [backend, frontend, e2e]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: badges
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - uses: actions/download-artifact@v7
+        with:
+          path: badges-in
+
+      - name: Assemble badge JSONs
+        run: |
+          cp badges-in/badge-backend/badge-backend.json backend-tests.json
+          cp badges-in/badge-frontend/badge-frontend.json frontend-tests.json
+          cp badges-in/badge-e2e/badge-e2e.json e2e-tests.json
+          echo "--- assembled badges ---"
+          cat backend-tests.json frontend-tests.json e2e-tests.json
+
+      - name: Commit and push badges
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend-tests.json frontend-tests.json e2e-tests.json
+          if git diff --cached --quiet; then
+            echo "No badge changes — skipping push."
+            exit 0
+          fi
+          git commit -m "chore: refresh test-count badges from CI"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:badges
+
+  # ----- Production deploy: push to main (or manual workflow_dispatch) -----
+  # NOTE: job-level `if` cannot read secrets for push events (the workflow would be
+  # rejected as invalid), so the SSH-secret check lives in the first step instead.
+  deploy:
+    name: Deploy — climbcheck.com (SSH + docker compose)
+    runs-on: ubuntu-latest
+    # Only main and only after green CI (backend + frontend + e2e).
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [backend, frontend, e2e]
+    # The "production" environment — deploy history in the Environments tab;
+    # protection rules can be added there (e.g. required approval before deploying).
+    environment: production
+    # Deploys to the same server cannot run in parallel — the second waits, does not cancel.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      # Skipped until SSH secrets are configured (Settings → Secrets → SSH_HOST/USER/KEY).
+      # Reading the secrets through env keeps the expressions valid for push events.
+      - name: Check SSH secrets
+        id: ssh-check
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ]; then
+            echo "SSH secrets not configured — deploy skipped."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip deploy (no SSH secrets)
+        if: steps.ssh-check.outputs.configured == 'false'
+        run: echo "Deploy skipped — configure SSH_HOST, SSH_USER and SSH_KEY secrets first."
+
+      - if: steps.ssh-check.outputs.configured == 'true'
+        uses: actions/checkout@v5
+        with:
+          # frontend is a submodule — its files must reach the server together with the repo
+          submodules: recursive
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      # Required secrets (Settings → Secrets and variables → Actions):
+      #   SSH_HOST — server address (e.g. climbcheck.com)
+      #   SSH_USER — SSH user (e.g. deploy)
+      #   SSH_KEY  — private SSH key; the public one lives in ~/.ssh/authorized_keys on the server
+      # Optional variables (Settings → Variables):
+      #   SSH_PORT    (default 22)
+      #   DEPLOY_PATH (default /opt/climbcheck)
+      #   APP_DOMAIN  (when set, we verify the public https://APP_DOMAIN after deploy)
+      # Server requirements: docker compose v2, rsync, .env in DEPLOY_PATH with
+      # DATABASE_USERNAME / DATABASE_PASSWORD / RIOT_API_KEY (read by docker-compose.prod.yml).
+      - name: Configure SSH key
+        if: steps.ssh-check.outputs.configured == 'true'
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sync code to server (rsync)
+        if: steps.ssh-check.outputs.configured == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/climbcheck' }}
+        run: |
+          # rsync skips artifacts and .git; the .env on the server is protected by the exclude
+          # (rsync --delete never removes excluded files)
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new" \
+            --exclude '.git/' \
+            --exclude '.env' \
+            --exclude 'node_modules/' \
+            --exclude 'backend/target/' \
+            --exclude 'frontend/dist/' \
+            --exclude 'e2e/playwright-report/' \
+            --exclude 'e2e/test-results/' \
+            --exclude '.freebuff/' \
+            ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
+
+      - name: Deploy (docker compose up -d --build)
+        if: steps.ssh-check.outputs.configured == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/climbcheck' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new \
+            "${SSH_USER}@${SSH_HOST}" \
+            "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml up -d --build"
+
+      - name: Backend healthcheck (via SSH)
+        if: steps.ssh-check.outputs.configured == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+        run: |
+          # The backend does not publish a port on the host (reachable only through nginx → backend:8080),
+          # so we check /actuator/health on the internal port over SSH
+          for i in $(seq 1 24); do
+            if ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new \
+                "${SSH_USER}@${SSH_HOST}" \
+                "curl -sf http://localhost:8080/actuator/health | grep -q '\"UP\"'"; then
+              echo "Backend healthy ✅"
+              exit 0
+            fi
+            echo "Waiting for the backend... (${i}/24)"
+            sleep 5
+          done
+          echo "Backend did not start within 2 minutes ❌"
+          exit 1
+
+      - name: Check the public address (optional)
+        if: steps.ssh-check.outputs.configured == 'true' && vars.APP_DOMAIN != ''
+        env:
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+        run: |
+          curl -sf --max-time 20 "https://${APP_DOMAIN}/" > /dev/null \
+            && echo "https://${APP_DOMAIN} is responding ✅"

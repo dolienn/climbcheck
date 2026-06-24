@@ -1,0 +1,12 @@
+{
+  "name": "climbcheck-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "bash run.sh",
+    "test:only": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
