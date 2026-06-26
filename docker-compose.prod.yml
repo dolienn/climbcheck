@@ -1,0 +1,64 @@
+# Production stack: Caddy (frontend + HTTPS) on ports 80/443 → backend (internal) → Postgres (internal).
+# Required variables in .env (same as in backend/application-prod.yml):
+#   DATABASE_USERNAME, DATABASE_PASSWORD, RIOT_API_KEY, DOMAIN (optional, default climbcheck.com)
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Note: the backend and DB do NOT publish ports on the host — reachable only through Caddy.
+# Postgres runs on the internal network with a new volume (db-data-prod),
+# so it does not collide with the dev docker-compose.yml. Caddy issues Let's Encrypt
+# automatically (see frontend/Caddyfile) — an A record of the domain must point to the server.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lp_leaderboard}
+      POSTGRES_USER: ${DATABASE_USERNAME:?Missing DATABASE_USERNAME in .env}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Missing DATABASE_PASSWORD in .env}
+    volumes:
+      - db-data-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:?} -d ${POSTGRES_DB:-lp_leaderboard}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # host "db" = the service name in this network (not localhost!)
+      DATABASE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-lp_leaderboard}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:?Missing DATABASE_USERNAME in .env}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Missing DATABASE_PASSWORD in .env}
+      RIOT_API_KEY: ${RIOT_API_KEY:?Missing RIOT_API_KEY in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # no ports: — the backend is reachable only through the nginx proxy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # The domain for Caddy — it must point (A record) to this server; Caddy issues
+      # and renews Let's Encrypt automatically. Locally it can be tested with DOMAIN=localhost.
+      DOMAIN: ${DOMAIN:-climbcheck.com}
+    volumes:
+      # Caddy keeps certs and config in these volumes — they survive restart/upgrade
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db-data-prod:
+  caddy-data:
+  caddy-config:
