@@ -418,7 +418,7 @@ class PlayerServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        Instant t0 = Instant.parse("2026-08-01T12:00:00Z");
+        Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot before = LpSnapshot.create(player, 100, "GOLD", "IV");
         ReflectionTestUtils.setField(before, "timestamp", t0);
         LpSnapshot after = LpSnapshot.create(player, 120, "GOLD", "IV");
@@ -450,7 +450,7 @@ class PlayerServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        Instant t0 = Instant.parse("2026-08-01T12:00:00Z");
+        Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot before = LpSnapshot.create(player, 100, "GOLD", "IV");
         ReflectionTestUtils.setField(before, "timestamp", t0);
         LpSnapshot after = LpSnapshot.create(player, 140, "GOLD", "IV");
@@ -490,7 +490,7 @@ class PlayerServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        Instant t0 = Instant.parse("2026-08-01T12:00:00Z");
+        Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot snapshot = LpSnapshot.create(player, 100, "GOLD", "IV");
         ReflectionTestUtils.setField(snapshot, "timestamp", t0);
 
@@ -547,7 +547,7 @@ class PlayerServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        Instant t0 = Instant.parse("2026-08-01T12:00:00Z");
+        Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot snapshot = LpSnapshot.create(player, 100, "GOLD", "IV");
         ReflectionTestUtils.setField(snapshot, "timestamp", t0);
 
@@ -578,7 +578,7 @@ class PlayerServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        Instant t0 = Instant.parse("2026-08-01T12:00:00Z");
+        Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot before = LpSnapshot.create(player, 100, "GOLD", "IV");
         ReflectionTestUtils.setField(before, "timestamp", t0);
         LpSnapshot atMatchEnd = LpSnapshot.create(player, 120, "GOLD", "IV");

@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RateLimiterTest {
 
-    private final MutableClock clock = new MutableClock(Instant.parse("2026-08-05T10:00:00Z"));
+    private final MutableClock clock = new MutableClock(Instant.parse("2026-07-05T10:00:00Z"));
     private final RateLimiter limiter = new RateLimiter(Duration.ofSeconds(60), 3, 1, true, clock);
 
     @Test
