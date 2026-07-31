@@ -12,7 +12,7 @@ LP progression charts and side-by-side player comparisons. No accounts, no login
 </p>
 
 [![Version](https://img.shields.io/badge/version-1.0.0-ffb86c)](https://github.com/dolienn/climbcheck/blob/develop/CHANGELOG.md)
-[![CI — Backend](https://github.com/dolienn/climbcheck/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/dolienn/climbcheck/actions/workflows/ci.yml)
+[![CI — Backend](https://github.com/dolienn/climbcheck/actions/workflows/ci.yml/badge.svg)](https://github.com/dolienn/climbcheck/actions/workflows/ci.yml)
 [![Frontend tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdolienn%2Fclimbcheck%2Fbadges%2Ffrontend-tests.json)](https://github.com/dolienn/climbcheck)
 [![Backend tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdolienn%2Fclimbcheck%2Fbadges%2Fbackend-tests.json)](https://github.com/dolienn/climbcheck)
 [![E2E tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdolienn%2Fclimbcheck%2Fbadges%2Fe2e-tests.json)](https://github.com/dolienn/climbcheck)
