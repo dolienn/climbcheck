@@ -49,11 +49,17 @@ public class PlayerService {
         this.retryPolicy = retryPolicy;
     }
 
-    private static final int RECENT_MATCH_IDS_COUNT = 50;
+    private static final int RECENT_MATCH_IDS_COUNT = 100;
     private static final int QUEUE_RANKED_SOLO = 420;
-    private static final int MAX_RECENT_MATCHES = 3;
-    /** How many recent ranked games we scan to compute the streak (cap on match-v5 calls). */
-    private static final int MAX_STREAK_GAMES = 10;
+    /** How many recent ranked games we show in the matches list. */
+    private static final int MAX_RECENT_MATCHES = 10;
+    /**
+     * How many recent ranked games we scan for the Most Played aggregation (cap on
+     * match-v5 calls; responses are cached 60 min, so repeated views are free).
+     * Riot does not expose per-champion season stats, so the aggregation reads the
+     * newest ranked games — a much larger sample than the visible 10 matches.
+     */
+    private static final int MAX_CHAMPION_GAMES = 50;
 
     @Transactional
     public PlayerResponse addPlayer(String dashboardToken, AddPlayerRequest request, String adminToken) {
@@ -129,8 +135,9 @@ public class PlayerService {
 
         List<String> matchIds = riotApiClient.getRecentMatchIds(player.getRegion(), player.getPuuid(), RECENT_MATCH_IDS_COUNT);
 
-        // Walk through the newest ranked matches (max MAX_STREAK_GAMES) — from one sample
-        // we take both the visible matches (3 newest) and the base for the current streak.
+        // Walk through the newest ranked matches (max MAX_CHAMPION_GAMES) — from one sample
+        // we take the visible matches (10 newest), the current streak and the champions
+        // for the Most Played aggregation.
         List<MatchData> rankedNewestFirst = new ArrayList<>();
         for (String matchId : matchIds) {
             RiotMatchResponse match = getMatchWithRetry(player, matchId);
@@ -154,7 +161,7 @@ public class PlayerService {
                             match.info().gameEndTimestamp(),
                             participant.lane(),
                             participant.role())));
-            if (rankedNewestFirst.size() == MAX_STREAK_GAMES) {
+            if (rankedNewestFirst.size() == MAX_CHAMPION_GAMES) {
                 break;
             }
         }
@@ -166,8 +173,8 @@ public class PlayerService {
     }
 
     /**
-     * Top 3 most-played champions from recent ranked games (max 10) with winrate.
-     * Sorting: by games first, then winrate (tie → game order).
+     * Top 3 most-played champions from recent ranked games (max MAX_CHAMPION_GAMES)
+     * with winrate. Sorting: by games first, then winrate (tie → game order).
      */
     private List<ChampionStatsResponse> computeTopChampions(List<MatchData> rankedNewestFirst) {
         return rankedNewestFirst.stream()

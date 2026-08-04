@@ -299,7 +299,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_flex", "EUW1_ranked", "EUW1_other"));
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
         when(riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
@@ -343,7 +343,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
@@ -367,7 +367,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
         when(riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
@@ -430,7 +430,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of(before, after));
@@ -465,7 +465,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_newer", "EUW1_older"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_newer")).thenReturn(newer);
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_older")).thenReturn(older);
@@ -500,7 +500,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of(snapshot));
@@ -527,7 +527,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
@@ -557,7 +557,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of(snapshot));
@@ -591,7 +591,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of(before, atMatchEnd));
@@ -631,7 +631,7 @@ class PlayerServiceTest {
         }
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50)).thenReturn(ids);
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100)).thenReturn(ids);
         for (int i = 0; i < matchesNewestFirst.size(); i++) {
             when(riotApiClient.getMatch(RiotRegion.EUW, ids.get(i))).thenReturn(matchesNewestFirst.get(i));
         }
@@ -726,6 +726,22 @@ class PlayerServiceTest {
     }
 
     @Test
+    void getRecentMatches_shouldAggregateChampionsFromMoreThanTheVisibleMatches() {
+        // 15 ranked games all on the same champion — the Most Played aggregation must
+        // scan more games than the 10 visible matches (Riot has no per-season champion
+        // stats, so the sample size is the only lever for a meaningful "Most Played").
+        java.util.ArrayList<RiotMatchResponse> games = new java.util.ArrayList<>();
+        for (int i = 15; i >= 1; i--) {
+            games.add(rankedMatch(String.valueOf(i), true, "Zed", 238));
+        }
+        PlayerMatchesResponse response = matchesWithStreak(games);
+
+        assertThat(response.matches()).hasSize(10); // visible list stays at 10
+        assertThat(response.topChampions().get(0).championName()).isEqualTo("Zed");
+        assertThat(response.topChampions().get(0).games()).isEqualTo(15);
+    }
+
+    @Test
     void getRecentMatches_shouldReturnEmptyTopChampionsWhenNoRankedGames() {
         Dashboard dashboard = Dashboard.create();
         ReflectionTestUtils.setField(dashboard, "id", 10L);
@@ -739,7 +755,7 @@ class PlayerServiceTest {
 
         when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
         when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 50))
+        when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_flex"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_flex")).thenReturn(flex);
 
