@@ -1,7 +1,6 @@
 # Production stack: Caddy (frontend + HTTPS) on ports 80/443 → backend (internal) → Postgres (internal).
 # Required variables in .env (same as in backend/application-prod.yml):
-#   DATABASE_USERNAME, DATABASE_PASSWORD, RIOT_API_KEY,
-#   DOMAIN (optional, default climbcheck.dolien.pl), PORTFOLIO_DOMAIN (optional, default dolien.pl)
+#   DATABASE_USERNAME, DATABASE_PASSWORD, RIOT_API_KEY, DOMAIN (optional, default climbcheck.dolien.pl)
 #
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d --build
@@ -9,7 +8,7 @@
 # Note: the backend and DB do NOT publish ports on the host — reachable only through Caddy.
 # Postgres runs on the internal network with a new volume (db-data-prod),
 # so it does not collide with the dev docker-compose.yml. Caddy issues Let's Encrypt
-# automatically (see frontend/Caddyfile) — A records of both domains must point to the server.
+# automatically (see frontend/Caddyfile) — an A record of the domain must point to the server.
 
 services:
   db:
@@ -48,12 +47,9 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      # Domains for Caddy — each must point (A record) to this server; Caddy issues
-      # and renews Let's Encrypt automatically. DOMAIN = the app (climbcheck.dolien.pl),
-      # PORTFOLIO_DOMAIN = the static portfolio landing (dolien.pl). Locally both can be
-      # tested with DOMAIN=localhost PORTFOLIO_DOMAIN=localhost.
+      # The domain for Caddy — it must point (A record) to this server; Caddy issues
+      # and renews Let's Encrypt automatically. Locally it can be tested with DOMAIN=localhost.
       DOMAIN: ${DOMAIN:-climbcheck.dolien.pl}
-      PORTFOLIO_DOMAIN: ${PORTFOLIO_DOMAIN:-dolien.pl}
     volumes:
       # Caddy keeps certs and config in these volumes — they survive restart/upgrade
       - caddy-data:/data
