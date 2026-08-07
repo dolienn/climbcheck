@@ -6,9 +6,11 @@ import { expect, test } from '@playwright/test';
  */
 test('full flow: create dashboard → add player → check ranking', async ({ page }) => {
   // 1. Landing → CTA "Create Dashboard" leads to /create
+  // (the landing has two such links — the sticky nav CTA and the hero CTA — either works)
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Create Dashboard' })).toBeVisible();
-  await page.getByRole('link', { name: 'Create Dashboard' }).click();
+  const createLink = page.getByRole('link', { name: 'Create Dashboard' }).first();
+  await expect(createLink).toBeVisible();
+  await createLink.click();
   await page.waitForURL(/\/create/);
 
   // 2. Create dashboard → redirect to /dashboard/{token}
@@ -102,7 +104,7 @@ test('viewer without an admin token does not see management buttons and gets 401
 
 test('Riot ID format validation shows a readable error', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Create Dashboard' }).click();
+  await page.getByRole('link', { name: 'Create Dashboard' }).first().click();
   await page.waitForURL(/\/create/);
   await page.getByRole('button', { name: 'Create Dashboard' }).click();
   await page.waitForURL(/\/dashboard\/[0-9a-f-]+/);
