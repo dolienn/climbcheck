@@ -1,8 +1,17 @@
-# Production deployment (climbcheck.com)
+# Production deployment (climbcheck.dolien.pl)
 
-This document describes what has to be done manually to get the site live at
-`https://climbcheck.com` — everything else is already in the repo (the `deploy` job
-in GitHub Actions, `docker-compose.prod.yml`, Caddy with auto-HTTPS).
+This document describes what has to be done manually to get the site live —
+everything else is already in the repo (the `deploy` job in GitHub Actions,
+`docker-compose.prod.yml`, Caddy with auto-HTTPS).
+
+Two domains are served from the same server (see `frontend/Caddyfile`):
+
+- **`climbcheck.dolien.pl`** — the ClimbCheck app (Angular SPA + `/api` proxy),
+  configured with the `DOMAIN` variable.
+- **`dolien.pl`** — a static portfolio landing page (served from
+  `/usr/share/caddy/portfolio`, no build step), configured with `PORTFOLIO_DOMAIN`.
+
+Both get Let's Encrypt certificates automatically; `www.*` redirects to the apex.
 
 ## 1. Production Riot Games API key
 
@@ -23,19 +32,21 @@ in a public product. The production key:
 
 ## 2. DNS and HTTPS
 
-Caddy (in `frontend/Caddyfile`) **issues and renews the Let's Encrypt certificate itself** —
+Caddy (in `frontend/Caddyfile`) **issues and renews the Let's Encrypt certificates itself** —
 no certbot or crons needed. Requirements:
 
-1. **A record**: `climbcheck.com` → server IP (e.g. `A climbcheck.com 203.0.113.10`).
+1. **A records** pointing to the server IP (e.g. `203.0.113.10`):
+   - `climbcheck.dolien.pl` → server IP (the app)
+   - `dolien.pl` and `www.dolien.pl` → server IP (the portfolio)
 2. Ports **80 and 443** open on the server (firewall).
-3. The domain in the `DOMAIN` variable (in `.env` on the server, or the default `climbcheck.com`
-   from `docker-compose.prod.yml`).
+3. The domains in `.env` on the server (`DOMAIN`, `PORTFOLIO_DOMAIN`) or their defaults
+   from `docker-compose.prod.yml` (`climbcheck.dolien.pl` / `dolien.pl`).
 
 Caddy redirects HTTP → HTTPS and adds security headers (HSTS, nosniff,
 `Referrer-Policy: no-referrer` — important, because the management key sometimes lives in the URL `?admin=`).
 
-Local test without a domain: `DOMAIN=localhost docker compose -f docker-compose.prod.yml up -d --build`
-(Caddy issues an internal cert for localhost).
+Local test without a domain: `DOMAIN=localhost PORTFOLIO_DOMAIN=localhost docker compose -f docker-compose.prod.yml up -d --build`
+(Caddy issues internal certs for localhost).
 
 ## 3. Server bootstrap
 
@@ -50,7 +61,8 @@ cd /opt/climbcheck && cat > .env <<'EOF'
 DATABASE_USERNAME=lp_user
 DATABASE_PASSWORD=<strong-password>
 RIOT_API_KEY=<production-key>
-DOMAIN=climbcheck.com
+DOMAIN=climbcheck.dolien.pl
+PORTFOLIO_DOMAIN=dolien.pl
 EOF
 ```
 
