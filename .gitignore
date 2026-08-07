@@ -1,8 +1,8 @@
 # Backend
 backend/target/
 *.class
-# (uwaga: backend/.mvn/ NIE jest ignorowany — maven-wrapper.properties musi
-# trafiać do repo, bo ./mvnw w CI wymaga tego pliku; jar ignoruje backend/.gitignore)
+# (note: backend/.mvn/ is NOT ignored - maven-wrapper.properties must
+# be committed, because ./mvnw in CI requires this file; jar ignores backend/.gitignore)
 
 # Frontend
 frontend/node_modules/
