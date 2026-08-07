@@ -354,13 +354,14 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/climbcheck' }}
         run: |
-          # The backend does not publish a port on the host (reachable only through nginx → backend:8080),
-          # so we check /actuator/health on the internal port over SSH
+          # The backend does not publish a port on the host (reachable only through Caddy →
+          # backend:8080 internally), so we check /actuator/health inside the container.
           for i in $(seq 1 24); do
             if ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new \
                 "${SSH_USER}@${SSH_HOST}" \
-                "curl -sf http://localhost:8080/actuator/health | grep -q '\"UP\"'"; then
+                "cd ${DEPLOY_PATH} && docker compose -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:8080/actuator/health | grep -q '\"UP\"'"; then
               echo "Backend healthy ✅"
               exit 0
             fi
