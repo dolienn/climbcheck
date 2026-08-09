@@ -2,7 +2,7 @@
 
 This document describes what has to be done manually to get the site live —
 everything else is already in the repo (the `deploy` job in GitHub Actions,
-`docker-compose.prod.yml`, Caddy with auto-HTTPS). The app is served at
+`infra/docker-compose.prod.yml`, Caddy with auto-HTTPS). The app is served at
 `climbcheck.dolien.pl` (Angular SPA + `/api` proxy, see `frontend/Caddyfile`,
 configured with the `DOMAIN` variable) and gets its Let's Encrypt certificate
 automatically.
@@ -32,13 +32,15 @@ no certbot or crons needed. Requirements:
 1. **A record**: `climbcheck.dolien.pl` → server IP (e.g. `A climbcheck.dolien.pl 203.0.113.10`).
 2. Ports **80 and 443** open on the server (firewall).
 3. The domain in the `DOMAIN` variable (in `.env` on the server, or the default
-   `climbcheck.dolien.pl` from `docker-compose.prod.yml`).
+   `climbcheck.dolien.pl` from `infra/docker-compose.prod.yml`).
 
 Caddy redirects HTTP → HTTPS and adds security headers (HSTS, nosniff,
 `Referrer-Policy: no-referrer` — important, because the management key sometimes lives in the URL `?admin=`).
 
-Local test without a domain: `DOMAIN=localhost docker compose -f docker-compose.prod.yml up -d --build`
-(Caddy issues an internal cert for localhost).
+Local test without a domain:
+`DOMAIN=localhost docker compose --project-directory . -f infra/docker-compose.prod.yml up -d --build`
+(Caddy issues an internal cert for localhost; `--project-directory .` keeps `.env` and the
+`./backend` / `./frontend` build contexts relative to the repo root).
 
 ## 3. Server bootstrap
 
@@ -64,7 +66,8 @@ Deployer SSH key: `ssh-keygen -t ed25519` locally → the public key goes to
 ## 4. Deploy
 
 A push to **main** (or a manual `workflow_dispatch` in GitHub Actions) runs the
-`deploy` job: rsync of the code → `docker compose -f docker-compose.prod.yml up -d --build`
+`deploy` job: rsync of the code →
+`docker compose --project-directory . -f infra/docker-compose.prod.yml up -d --build`
 → `/actuator/health` healthcheck → verification of the public `https://DOMAIN/`.
 
 The `.env` on the server is protected from overwriting (excluded in rsync).

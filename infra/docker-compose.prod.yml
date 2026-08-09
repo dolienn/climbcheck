@@ -2,12 +2,13 @@
 # Required variables in .env (same as in backend/application-prod.yml):
 #   DATABASE_USERNAME, DATABASE_PASSWORD, RIOT_API_KEY, DOMAIN (optional, default climbcheck.dolien.pl)
 #
-# Usage:
-#   docker compose -f docker-compose.prod.yml up -d --build
+# Usage (from the repo root — --project-directory keeps .env and the ./backend / ./frontend
+# build contexts relative to the root):
+#   docker compose --project-directory . -f infra/docker-compose.prod.yml up -d --build
 #
 # Note: the backend and DB do NOT publish ports on the host — reachable only through Caddy.
 # Postgres runs on the internal network with a new volume (db-data-prod),
-# so it does not collide with the dev docker-compose.yml. Caddy issues Let's Encrypt
+# so it does not collide with the dev infra/docker-compose.yml. Caddy issues Let's Encrypt
 # automatically (see frontend/Caddyfile) — an A record of the domain must point to the server.
 
 services:
