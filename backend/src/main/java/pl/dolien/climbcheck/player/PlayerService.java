@@ -9,12 +9,11 @@ import pl.dolien.climbcheck.exception.PlayerAlreadyTrackedException;
 import pl.dolien.climbcheck.exception.PlayerNotFoundException;
 import pl.dolien.climbcheck.exception.RiotRateLimitException;
 import pl.dolien.climbcheck.exception.UnauthorizedException;
-import pl.dolien.climbcheck.riot.RetryPolicy;
 import pl.dolien.climbcheck.riot.RiotApiClient;
 import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
 import pl.dolien.climbcheck.riot.RiotMatchResponse;
+import pl.dolien.climbcheck.riot.RiotRetryer;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,20 +32,20 @@ public class PlayerService {
     private final RiotApiClient riotApiClient;
     private final PlayerMapper playerMapper;
     private final LpSnapshotRepository lpSnapshotRepository;
-    private final RetryPolicy retryPolicy;
+    private final RiotRetryer riotRetryer;
 
     public PlayerService(PlayerRepository playerRepository,
                          DashboardRepository dashboardRepository,
                          RiotApiClient riotApiClient,
                          PlayerMapper playerMapper,
                          LpSnapshotRepository lpSnapshotRepository,
-                         RetryPolicy retryPolicy) {
+                         RiotRetryer riotRetryer) {
         this.playerRepository = playerRepository;
         this.dashboardRepository = dashboardRepository;
         this.riotApiClient = riotApiClient;
         this.playerMapper = playerMapper;
         this.lpSnapshotRepository = lpSnapshotRepository;
-        this.retryPolicy = retryPolicy;
+        this.riotRetryer = riotRetryer;
     }
 
     private static final int RECENT_MATCH_IDS_COUNT = 100;
@@ -146,7 +145,8 @@ public class PlayerService {
         // for the Most Played aggregation.
         List<MatchData> rankedNewestFirst = new ArrayList<>();
         for (String matchId : matchIds) {
-            RiotMatchResponse match = getMatchWithRetry(player, matchId);
+            RiotMatchResponse match = riotRetryer.execute(
+                    () -> riotApiClient.getMatch(player.getRegion(), matchId));
             if (match.info() == null || match.info().queueId() != QUEUE_RANKED_SOLO) {
                 continue;
             }
@@ -248,7 +248,8 @@ public class PlayerService {
             points.add(new SnapshotPoint(snapshot.getTimestamp(), snapshot.getLp()));
         }
         try {
-            RiotLeagueEntryResponse live = getLeagueEntryWithRetry(player);
+            RiotLeagueEntryResponse live = riotRetryer.execute(
+                    () -> riotApiClient.getLeagueEntry(player.getRegion(), player.getPuuid()));
             points.add(new SnapshotPoint(Instant.now(), live.leaguePoints()));
         } catch (RiotRateLimitException ex) {
             // LP attribution is best-effort: when league-v4 does not answer after retries,
@@ -298,19 +299,6 @@ public class PlayerService {
         return -1;
     }
 
-    private RiotLeagueEntryResponse getLeagueEntryWithRetry(TrackedPlayer player) {
-        for (int attempt = 1; ; attempt++) {
-            try {
-                return riotApiClient.getLeagueEntry(player.getRegion(), player.getPuuid());
-            } catch (RiotRateLimitException ex) {
-                if (attempt >= retryPolicy.maxAttempts()) {
-                    throw ex;
-                }
-                sleep(retryPolicy.delayForAttempt(attempt, ex.getRetryAfter()));
-            }
-        }
-    }
-
     private record SnapshotPoint(Instant timestamp, int lp) {
     }
 
@@ -333,26 +321,4 @@ public class PlayerService {
         }
     }
 
-    private RiotMatchResponse getMatchWithRetry(TrackedPlayer player, String matchId) {
-        for (int attempt = 1; ; attempt++) {
-            try {
-                return riotApiClient.getMatch(player.getRegion(), matchId);
-            } catch (RiotRateLimitException ex) {
-                if (attempt >= retryPolicy.maxAttempts()) {
-                    throw ex;
-                }
-                Duration delay = retryPolicy.delayForAttempt(attempt, ex.getRetryAfter());
-                sleep(delay);
-            }
-        }
-    }
-
-    private void sleep(Duration delay) {
-        try {
-            Thread.sleep(delay.toMillis());
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for rate limit retry", ex);
-        }
-    }
 }

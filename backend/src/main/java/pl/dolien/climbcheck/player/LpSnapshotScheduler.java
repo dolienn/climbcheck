@@ -4,12 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import pl.dolien.climbcheck.exception.RiotRateLimitException;
-import pl.dolien.climbcheck.riot.RetryPolicy;
 import pl.dolien.climbcheck.riot.RiotApiClient;
 import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
+import pl.dolien.climbcheck.riot.RiotRetryer;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,16 +19,16 @@ public class LpSnapshotScheduler {
     private final PlayerRepository playerRepository;
     private final LpSnapshotRepository lpSnapshotRepository;
     private final RiotApiClient riotApiClient;
-    private final RetryPolicy retryPolicy;
+    private final RiotRetryer riotRetryer;
 
     public LpSnapshotScheduler(PlayerRepository playerRepository,
                                LpSnapshotRepository lpSnapshotRepository,
                                RiotApiClient riotApiClient,
-                               RetryPolicy retryPolicy) {
+                               RiotRetryer riotRetryer) {
         this.playerRepository = playerRepository;
         this.lpSnapshotRepository = lpSnapshotRepository;
         this.riotApiClient = riotApiClient;
-        this.retryPolicy = retryPolicy;
+        this.riotRetryer = riotRetryer;
     }
 
     @Scheduled(cron = "${app.lp-snapshot.cron}")
@@ -46,7 +44,8 @@ public class LpSnapshotScheduler {
     }
 
     void captureSnapshot(TrackedPlayer player) {
-        RiotLeagueEntryResponse league = getLeagueEntryWithRetry(player);
+        RiotLeagueEntryResponse league = riotRetryer.execute(
+                () -> riotApiClient.getLeagueEntry(player.getRegion(), player.getPuuid()));
         int currentLp = league.leaguePoints();
 
         Optional<LpSnapshot> lastSnapshot =
@@ -57,28 +56,4 @@ public class LpSnapshotScheduler {
         }
     }
 
-    private RiotLeagueEntryResponse getLeagueEntryWithRetry(TrackedPlayer player) {
-        for (int attempt = 1; ; attempt++) {
-            try {
-                return riotApiClient.getLeagueEntry(player.getRegion(), player.getPuuid());
-            } catch (RiotRateLimitException ex) {
-                if (attempt >= retryPolicy.maxAttempts()) {
-                    throw ex;
-                }
-                Duration delay = retryPolicy.delayForAttempt(attempt, ex.getRetryAfter());
-                log.warn("Riot API rate limited for player id={}, retrying in {}ms (attempt {}/{})",
-                        player.getId(), delay.toMillis(), attempt, retryPolicy.maxAttempts());
-                sleep(delay);
-            }
-        }
-    }
-
-    private void sleep(Duration delay) {
-        try {
-            Thread.sleep(delay.toMillis());
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for rate limit retry", ex);
-        }
-    }
 }
