@@ -71,6 +71,10 @@ climbcheck/
 └── .github/workflows/ # CI (backend + frontend + e2e) and the deploy job
 ```
 
+> **Note on migrations:** the Flyway schema currently spans **V1..V6**. A draft V7 (persisting
+> wins/losses on LP snapshots) was dropped along with the winrate-over-time chart — winrate is
+> computed at runtime from the live league-v4 response, so no schema change was needed.
+
 ## 🚀 Quick start (local dev)
 
 ```bash
