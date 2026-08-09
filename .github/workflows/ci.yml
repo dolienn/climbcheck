@@ -261,21 +261,7 @@ jobs:
     # common case during development) must NOT take the production backend down:
     # each deploy rebuilds the image and recreates the container, and on the small
     # Oracle VM the Maven build + Spring boot alone take several minutes.
-    paths:
-      - 'backend/src/main/**'
-      - 'backend/Dockerfile'
-      - 'backend/pom.xml'
-      - 'backend/mvnw'
-      - 'backend/.mvn/**'
-      - 'frontend/src/**'
-      - 'frontend/public/**'
-      - 'frontend/Caddyfile'
-      - 'frontend/Dockerfile'
-      - 'frontend/package.json'
-      - 'frontend/package-lock.json'
-      - 'frontend/angular.json'
-      - 'infra/**'
-      - 'scripts/**'
+    # (Detected per-run via dorny/paths-filter — job-level `paths` is not valid.)
     # The "production" environment — deploy history in the Environments tab;
     # protection rules can be added there (e.g. required approval before deploying).
     environment: production
@@ -311,6 +297,32 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GH_PAT || github.token }}
 
+      - name: Detect runtime changes
+        id: changes
+        if: steps.ssh-check.outputs.configured == 'true'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            deploy:
+              - 'backend/src/main/**'
+              - 'backend/Dockerfile'
+              - 'backend/pom.xml'
+              - 'backend/mvnw'
+              - 'backend/.mvn/**'
+              - 'frontend/src/**'
+              - 'frontend/public/**'
+              - 'frontend/Caddyfile'
+              - 'frontend/Dockerfile'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'frontend/angular.json'
+              - 'infra/**'
+              - 'scripts/**'
+
+      - name: Skip deploy (no runtime changes)
+        if: steps.ssh-check.outputs.configured == 'true' && github.event_name != 'workflow_dispatch' && steps.changes.outputs.deploy == 'false'
+        run: echo "No runtime changes — deploy skipped."
+
       # Required secrets (Settings → Secrets and variables → Actions):
       #   SSH_HOST — server address (e.g. climbcheck.dolien.pl)
       #   SSH_USER — SSH user (e.g. deploy)
@@ -322,7 +334,7 @@ jobs:
       # Server requirements: docker compose v2, rsync, .env in DEPLOY_PATH with
       #   DATABASE_USERNAME / DATABASE_PASSWORD / RIOT_API_KEY (read by infra/docker-compose.prod.yml).
       - name: Configure SSH key
-        if: steps.ssh-check.outputs.configured == 'true'
+        if: steps.ssh-check.outputs.configured == 'true' && (github.event_name == 'workflow_dispatch' || steps.changes.outputs.deploy == 'true')
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -335,7 +347,7 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
 
       - name: Sync code to server (rsync)
-        if: steps.ssh-check.outputs.configured == 'true'
+        if: steps.ssh-check.outputs.configured == 'true' && (github.event_name == 'workflow_dispatch' || steps.changes.outputs.deploy == 'true')
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -356,7 +368,7 @@ jobs:
             ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
 
       - name: Deploy (docker compose up -d --build)
-        if: steps.ssh-check.outputs.configured == 'true'
+        if: steps.ssh-check.outputs.configured == 'true' && (github.event_name == 'workflow_dispatch' || steps.changes.outputs.deploy == 'true')
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -368,7 +380,7 @@ jobs:
             "cd ${DEPLOY_PATH} && docker compose --project-directory . -f infra/docker-compose.prod.yml up -d --build"
 
       - name: Backend healthcheck (via SSH)
-        if: steps.ssh-check.outputs.configured == 'true'
+        if: steps.ssh-check.outputs.configured == 'true' && (github.event_name == 'workflow_dispatch' || steps.changes.outputs.deploy == 'true')
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -391,7 +403,7 @@ jobs:
           exit 1
 
       - name: Check the public address (optional)
-        if: steps.ssh-check.outputs.configured == 'true' && vars.APP_DOMAIN != ''
+        if: steps.ssh-check.outputs.configured == 'true' && (github.event_name == 'workflow_dispatch' || steps.changes.outputs.deploy == 'true') && vars.APP_DOMAIN != ''
         env:
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
         run: |
