@@ -26,24 +26,6 @@ public class PlayerController {
         this.matchInsightsService = matchInsightsService;
     }
 
-    @DeleteMapping("/{playerId}")
-    public ResponseEntity<Void> removePlayer(
-            @PathVariable String token,
-            @PathVariable Long playerId,
-            @RequestHeader(value = "X-Admin-Token", required = false) String adminToken) {
-        playerService.removePlayer(token, playerId, adminToken);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping
-    public ResponseEntity<PlayerResponse> addPlayer(
-            @PathVariable String token,
-            @Valid @RequestBody AddPlayerRequest request,
-            @RequestHeader(value = "X-Admin-Token", required = false) String adminToken) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(playerService.addPlayer(token, request, adminToken));
-    }
-
     @GetMapping("/{playerId}/lp-history")
     public ResponseEntity<List<LpSnapshotResponse>> getLpHistory(
             @PathVariable String token,
@@ -56,5 +38,23 @@ public class PlayerController {
             @PathVariable String token,
             @PathVariable Long playerId) {
         return ResponseEntity.ok(matchInsightsService.getRecentMatches(token, playerId));
+    }
+
+    @PostMapping
+    public ResponseEntity<PlayerResponse> addPlayer(
+            @PathVariable String token,
+            @Valid @RequestBody AddPlayerRequest request,
+            @RequestHeader(value = "X-Admin-Token", required = false) String adminToken) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(playerService.addPlayer(token, request, adminToken));
+    }
+
+    @DeleteMapping("/{playerId}")
+    public ResponseEntity<Void> removePlayer(
+            @PathVariable String token,
+            @PathVariable Long playerId,
+            @RequestHeader(value = "X-Admin-Token", required = false) String adminToken) {
+        playerService.removePlayer(token, playerId, adminToken);
+        return ResponseEntity.noContent().build();
     }
 }
