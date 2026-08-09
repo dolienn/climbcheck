@@ -38,7 +38,6 @@ public class RiotApiClient {
             "/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count={count}";
     private static final String MATCH_V5_PATH =
             "/lol/match/v5/matches/{matchId}";
-    private static final String RANKED_SOLO_5x5 = "RANKED_SOLO_5x5";
     private static final List<String> RATE_LIMIT_HEADERS = List.of(
             "X-App-Rate-Limit", "X-App-Rate-Limit-Count",
             "X-Method-Rate-Limit", "X-Method-Rate-Limit-Count",
@@ -121,7 +120,7 @@ public class RiotApiClient {
                 .body(RiotLeagueEntryResponse[].class);
 
         return Arrays.stream(entries)
-                .filter(entry -> RANKED_SOLO_5x5.equals(entry.queueType()))
+                .filter(entry -> RiotLeagueEntryResponse.RANKED_SOLO_5x5.equals(entry.queueType()))
                 .findFirst()
                 .orElse(RiotLeagueEntryResponse.unranked());
     }
