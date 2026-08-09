@@ -8,6 +8,7 @@ import pl.dolien.climbcheck.riot.RiotApiClient;
 import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
 import pl.dolien.climbcheck.riot.RiotRetryer;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,15 +21,18 @@ public class LpSnapshotScheduler {
     private final LpSnapshotRepository lpSnapshotRepository;
     private final RiotApiClient riotApiClient;
     private final RiotRetryer riotRetryer;
+    private final Clock clock;
 
     public LpSnapshotScheduler(PlayerRepository playerRepository,
                                LpSnapshotRepository lpSnapshotRepository,
                                RiotApiClient riotApiClient,
-                               RiotRetryer riotRetryer) {
+                               RiotRetryer riotRetryer,
+                               Clock clock) {
         this.playerRepository = playerRepository;
         this.lpSnapshotRepository = lpSnapshotRepository;
         this.riotApiClient = riotApiClient;
         this.riotRetryer = riotRetryer;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "${app.lp-snapshot.cron}")
@@ -51,7 +55,7 @@ public class LpSnapshotScheduler {
         Optional<LpSnapshot> lastSnapshot =
                 lpSnapshotRepository.findTopByPlayerIdOrderByTimestampDesc(player.getId());
 
-        if (LpSnapshot.shouldCapture(lastSnapshot, currentLp, league.tier(), league.rank())) {
+        if (LpSnapshot.shouldCapture(lastSnapshot, currentLp, league.tier(), league.rank(), clock.instant())) {
             lpSnapshotRepository.save(LpSnapshot.create(player, currentLp, league.tier(), league.rank()));
         }
     }

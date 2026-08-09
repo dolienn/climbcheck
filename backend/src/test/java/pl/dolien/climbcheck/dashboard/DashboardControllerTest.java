@@ -3,8 +3,10 @@ package pl.dolien.climbcheck.dashboard;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import pl.dolien.climbcheck.ClockConfig;
 import pl.dolien.climbcheck.exception.DashboardNotFoundException;
 import pl.dolien.climbcheck.player.LpSnapshotResponse;
 import pl.dolien.climbcheck.player.PlayerResponse;
@@ -20,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(DashboardController.class)
+@Import(ClockConfig.class)
 class DashboardControllerTest {
 
     private static final String TOKEN = "dashboard-token";

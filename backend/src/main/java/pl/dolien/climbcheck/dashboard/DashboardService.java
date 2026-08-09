@@ -14,6 +14,7 @@ import pl.dolien.climbcheck.riot.RankOrder;
 import pl.dolien.climbcheck.riot.RiotApiClient;
 import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -32,17 +33,20 @@ public class DashboardService {
     private final LpSnapshotRepository lpSnapshotRepository;
     private final RiotApiClient riotApiClient;
     private final PlayerMapper playerMapper;
+    private final Clock clock;
 
     public DashboardService(DashboardRepository dashboardRepository,
                             PlayerRepository playerRepository,
                             LpSnapshotRepository lpSnapshotRepository,
                             RiotApiClient riotApiClient,
-                            PlayerMapper playerMapper) {
+                            PlayerMapper playerMapper,
+                            Clock clock) {
         this.dashboardRepository = dashboardRepository;
         this.playerRepository = playerRepository;
         this.lpSnapshotRepository = lpSnapshotRepository;
         this.riotApiClient = riotApiClient;
         this.playerMapper = playerMapper;
+        this.clock = clock;
     }
 
     @Transactional
@@ -96,7 +100,7 @@ public class DashboardService {
         Optional<LpSnapshot> last = history.isEmpty()
                 ? Optional.empty()
                 : Optional.of(history.get(history.size() - 1));
-        if (LpSnapshot.shouldCapture(last, league.leaguePoints(), league.tier(), league.rank())) {
+        if (LpSnapshot.shouldCapture(last, league.leaguePoints(), league.tier(), league.rank(), clock.instant())) {
             lpSnapshotRepository.save(LpSnapshot.create(player, league.leaguePoints(), league.tier(), league.rank()));
         }
     }
