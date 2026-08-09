@@ -19,8 +19,10 @@ import pl.dolien.climbcheck.riot.RiotRetryer;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,8 +60,8 @@ class MatchInsightsServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_flex", "EUW1_ranked", "EUW1_other"));
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
@@ -102,8 +104,8 @@ class MatchInsightsServiceTest {
                 200L, 2400L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "LeeSin", 234, true, 5, 2, 6, 8, 200, "JUNGLE", "NONE"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -126,8 +128,8 @@ class MatchInsightsServiceTest {
         RiotMatchResponse ranked = new RiotMatchResponse(new RiotMatchResponse.Info(200L, 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, false, 2, 12, 4, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
@@ -147,8 +149,8 @@ class MatchInsightsServiceTest {
     @Test
     void getRecentMatches_shouldThrowWhenPlayerNotFound() {
         Dashboard dashboard = Dashboard.create();
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.empty());
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> matchInsightsService.getRecentMatches(TOKEN, 1L))
                 .isInstanceOf(PlayerNotFoundException.class)
@@ -164,8 +166,8 @@ class MatchInsightsServiceTest {
         TrackedPlayer player = TrackedPlayer.create(otherDashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
 
         assertThatThrownBy(() -> matchInsightsService.getRecentMatches(TOKEN, 1L))
                 .isInstanceOf(PlayerNotFoundException.class)
@@ -189,8 +191,8 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(1800).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -224,8 +226,8 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(2400).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Zed", 238, true, 5, 1, 9, 180, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_newer", "EUW1_older"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_newer")).thenReturn(newer);
@@ -259,8 +261,8 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(7200).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -286,8 +288,8 @@ class MatchInsightsServiceTest {
                 1_000_000L, 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -316,8 +318,8 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(7200).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -350,8 +352,8 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(3600).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -386,12 +388,12 @@ class MatchInsightsServiceTest {
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
 
-        List<String> ids = new java.util.ArrayList<>();
+        List<String> ids = new ArrayList<>();
         for (int i = 0; i < matchesNewestFirst.size(); i++) {
             ids.add("EUW1_" + (matchesNewestFirst.size() - i));
         }
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100)).thenReturn(ids);
         for (int i = 0; i < matchesNewestFirst.size(); i++) {
             when(riotApiClient.getMatch(RiotRegion.EUW, ids.get(i))).thenReturn(matchesNewestFirst.get(i));
@@ -491,7 +493,7 @@ class MatchInsightsServiceTest {
         // 15 ranked games all on the same champion — the Most Played aggregation must
         // scan more games than the 10 visible matches (Riot has no per-season champion
         // stats, so the sample size is the only lever for a meaningful "Most Played").
-        java.util.ArrayList<RiotMatchResponse> games = new java.util.ArrayList<>();
+        ArrayList<RiotMatchResponse> games = new ArrayList<>();
         for (int i = 15; i >= 1; i--) {
             games.add(rankedMatch(String.valueOf(i), true, "Zed", 238));
         }
@@ -514,8 +516,8 @@ class MatchInsightsServiceTest {
                 100L, 1983L, 440,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Zed", 238, true, 5, 1, 9, 180, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(java.util.Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(java.util.Optional.of(player));
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_flex"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_flex")).thenReturn(flex);
