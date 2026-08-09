@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +31,7 @@ class LpSnapshotCleanupSchedulerTest {
 
     @Test
     void purgeOldSnapshots_shouldDeleteSnapshotsOlderThanMaxAge() {
-        when(lpSnapshotRepository.deleteByTimestampBefore(org.mockito.ArgumentMatchers.any()))
+        when(lpSnapshotRepository.deleteByTimestampBefore(any()))
                 .thenReturn(42L);
 
         scheduler.purgeOldSnapshots();
@@ -45,12 +46,12 @@ class LpSnapshotCleanupSchedulerTest {
 
     @Test
     void purgeOldSnapshots_shouldRunEvenWhenNothingToDelete() {
-        when(lpSnapshotRepository.deleteByTimestampBefore(org.mockito.ArgumentMatchers.any()))
+        when(lpSnapshotRepository.deleteByTimestampBefore(any()))
                 .thenReturn(0L);
 
         scheduler.purgeOldSnapshots();
 
-        verify(lpSnapshotRepository).deleteByTimestampBefore(org.mockito.ArgumentMatchers.any());
+        verify(lpSnapshotRepository).deleteByTimestampBefore(any());
     }
 
     @Test
