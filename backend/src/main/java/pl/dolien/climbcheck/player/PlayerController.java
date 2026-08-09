@@ -19,9 +19,11 @@ import java.util.List;
 public class PlayerController {
 
     private final PlayerService playerService;
+    private final MatchInsightsService matchInsightsService;
 
-    public PlayerController(PlayerService playerService) {
+    public PlayerController(PlayerService playerService, MatchInsightsService matchInsightsService) {
         this.playerService = playerService;
+        this.matchInsightsService = matchInsightsService;
     }
 
     @DeleteMapping("/{playerId}")
@@ -53,6 +55,6 @@ public class PlayerController {
     public ResponseEntity<PlayerMatchesResponse> getRecentMatches(
             @PathVariable String token,
             @PathVariable Long playerId) {
-        return ResponseEntity.ok(playerService.getRecentMatches(token, playerId));
+        return ResponseEntity.ok(matchInsightsService.getRecentMatches(token, playerId));
     }
 }
