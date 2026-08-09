@@ -257,6 +257,25 @@ jobs:
     # Only main and only after green CI (backend + frontend + e2e).
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: [backend, frontend, e2e]
+    # Deploy only when runtime code actually changed — test-only/docs pushes (the
+    # common case during development) must NOT take the production backend down:
+    # each deploy rebuilds the image and recreates the container, and on the small
+    # Oracle VM the Maven build + Spring boot alone take several minutes.
+    paths:
+      - 'backend/src/main/**'
+      - 'backend/Dockerfile'
+      - 'backend/pom.xml'
+      - 'backend/mvnw'
+      - 'backend/.mvn/**'
+      - 'frontend/src/**'
+      - 'frontend/public/**'
+      - 'frontend/Caddyfile'
+      - 'frontend/Dockerfile'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - 'frontend/angular.json'
+      - 'infra/**'
+      - 'scripts/**'
     # The "production" environment — deploy history in the Environments tab;
     # protection rules can be added there (e.g. required approval before deploying).
     environment: production

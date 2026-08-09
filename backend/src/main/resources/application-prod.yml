@@ -4,6 +4,13 @@ spring:
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
 
+  # Initialize the DispatcherServlet at startup instead of on the first request,
+  # so the first API call after a deploy is not delayed by lazy servlet init
+  # (the backend boots on a small VM and a hanging first request looks like an outage).
+  mvc:
+    servlet:
+      load-on-startup: 1
+
   jpa:
     show-sql: false
 
