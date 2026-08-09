@@ -7,11 +7,14 @@ in League of Legends. Create a dashboard, add your friends' Riot IDs (EUW / EUNE
 link — and everyone sees the same live ranking sorted by rank, with winrates, match history,
 LP progression charts and side-by-side player comparisons. No accounts, no logins.
 
+> **🔗 Live:** [climbcheck.dolien.pl](https://climbcheck.dolien.pl) — open the live demo, no account needed.
+
 <p align="center">
   <img src="docs/screenshots/demo.png" alt="ClimbCheck live demo — leaderboard with podium, winrates and streaks" width="780">
 </p>
 
 [![Version](https://img.shields.io/badge/version-1.0.0-ffb86c)](https://github.com/dolienn/climbcheck/blob/develop/CHANGELOG.md)
+[![Live](https://img.shields.io/badge/live-climbcheck.dolien.pl-2ea043)](https://climbcheck.dolien.pl)
 [![CI — Backend](https://github.com/dolienn/climbcheck/actions/workflows/ci.yml/badge.svg)](https://github.com/dolienn/climbcheck/actions/workflows/ci.yml)
 [![Frontend tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdolienn%2Fclimbcheck%2Fbadges%2Ffrontend-tests.json)](https://github.com/dolienn/climbcheck)
 [![Backend tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdolienn%2Fclimbcheck%2Fbadges%2Fbackend-tests.json)](https://github.com/dolienn/climbcheck)
@@ -101,9 +104,10 @@ trigger a **deploy** job (SSH → `docker compose up -d --build`).
 
 ## 🌍 Deployment
 
-Production runs on Docker Compose with **Caddy** handling automatic HTTPS (Let's Encrypt),
-SPA routing and security headers. See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the full
-guide: applying for a production Riot API key, DNS setup, server bootstrap and the CI deploy job.
+The app is live at **[https://climbcheck.dolien.pl](https://climbcheck.dolien.pl)**. Production
+runs on Docker Compose with **Caddy** handling automatic HTTPS (Let's Encrypt), SPA routing and
+security headers. See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the full guide: applying
+for a production Riot API key, DNS setup, server bootstrap and the CI deploy job.
 
 ## ⚠️ Disclaimer
 
