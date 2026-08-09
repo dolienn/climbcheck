@@ -12,6 +12,7 @@ import pl.dolien.climbcheck.riot.RetryPolicy;
 import pl.dolien.climbcheck.riot.RiotApiClient;
 import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
 import pl.dolien.climbcheck.riot.RiotRegion;
+import pl.dolien.climbcheck.riot.RiotRetryer;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -43,7 +44,7 @@ class LpSnapshotSchedulerTest {
     @BeforeEach
     void setUp() {
         scheduler = new LpSnapshotScheduler(playerRepository, lpSnapshotRepository, riotApiClient,
-                new RetryPolicy(3, 1, 10));
+                new RiotRetryer(new RetryPolicy(3, 1, 10)));
     }
 
     private TrackedPlayer player() {

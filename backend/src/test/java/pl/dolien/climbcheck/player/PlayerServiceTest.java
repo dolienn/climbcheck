@@ -18,6 +18,7 @@ import pl.dolien.climbcheck.riot.RiotApiClient;
 import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
 import pl.dolien.climbcheck.riot.RiotMatchResponse;
 import pl.dolien.climbcheck.riot.RiotRegion;
+import pl.dolien.climbcheck.riot.RiotRetryer;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -53,7 +54,7 @@ class PlayerServiceTest {
     @BeforeEach
     void setUp() {
         playerService = new PlayerService(playerRepository, dashboardRepository, riotApiClient,
-                new PlayerMapper(), lpSnapshotRepository, new RetryPolicy(3, 10, 1000));
+                new PlayerMapper(), lpSnapshotRepository, new RiotRetryer(new RetryPolicy(3, 10, 1000)));
     }
 
     @Test
