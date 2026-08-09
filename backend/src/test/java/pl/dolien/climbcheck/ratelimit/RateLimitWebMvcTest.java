@@ -3,8 +3,10 @@ package pl.dolien.climbcheck.ratelimit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import pl.dolien.climbcheck.ClockConfig;
 import pl.dolien.climbcheck.dashboard.DashboardController;
 import pl.dolien.climbcheck.dashboard.DashboardCreatedResponse;
 import pl.dolien.climbcheck.dashboard.DashboardResponse;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.rate-limit.max-requests-per-ip=3",
         "app.rate-limit.dashboard-create-max=1"
 })
+@Import(ClockConfig.class)
 class RateLimitWebMvcTest {
 
     @Autowired

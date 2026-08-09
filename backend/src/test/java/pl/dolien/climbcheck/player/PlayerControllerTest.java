@@ -3,12 +3,14 @@ package pl.dolien.climbcheck.player;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import pl.dolien.climbcheck.ClockConfig;
 import pl.dolien.climbcheck.exception.DashboardNotFoundException;
 import pl.dolien.climbcheck.exception.PlayerNotFoundException;
 import pl.dolien.climbcheck.exception.RiotRateLimitException;
@@ -40,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PlayerController.class)
+@Import(ClockConfig.class)
 class PlayerControllerTest {
 
     private static final String TOKEN = "dashboard-token";

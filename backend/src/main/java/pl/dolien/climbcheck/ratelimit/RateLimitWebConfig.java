@@ -22,9 +22,10 @@ public class RateLimitWebConfig implements WebMvcConfigurer {
     public RateLimitWebConfig(@Value("${app.rate-limit.window:60s}") Duration window,
                               @Value("${app.rate-limit.max-requests-per-ip:120}") int maxRequestsPerIp,
                               @Value("${app.rate-limit.dashboard-create-max:10}") int dashboardCreateMax,
-                              @Value("${app.rate-limit.enabled:true}") boolean enabled) {
+                              @Value("${app.rate-limit.enabled:true}") boolean enabled,
+                              Clock clock) {
         this.interceptor = new RateLimitInterceptor(
-                new RateLimiter(window, maxRequestsPerIp, dashboardCreateMax, enabled, Clock.systemUTC()));
+                new RateLimiter(window, maxRequestsPerIp, dashboardCreateMax, enabled, clock));
     }
 
     @Override

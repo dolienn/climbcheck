@@ -18,6 +18,7 @@ import pl.dolien.climbcheck.riot.RiotLeagueEntryResponse;
 import pl.dolien.climbcheck.riot.RiotRegion;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -49,7 +50,7 @@ class DashboardServiceTest {
     @BeforeEach
     void setUp() {
         dashboardService = new DashboardService(dashboardRepository, playerRepository,
-                lpSnapshotRepository, riotApiClient, new PlayerMapper());
+                lpSnapshotRepository, riotApiClient, new PlayerMapper(), Clock.systemUTC());
     }
 
     @Test

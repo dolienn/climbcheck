@@ -61,8 +61,10 @@ public class LpSnapshot {
      * Whether to append a new snapshot: no previous one, LP/rank changed, or the last one
      * is older than 12h. Shared by the scheduler (every 2h) and the opportunistic write on
      * GET dashboard (league-v4 is fetched for the ranking anyway — snapshot costs 0 Riot calls).
+     * Pure function of {@code now} (the injected Clock's instant), so time-dependent
+     * behaviour is testable without sleeping.
      */
-    public static boolean shouldCapture(Optional<LpSnapshot> lastSnapshot, int lp, String tier, String rank) {
+    public static boolean shouldCapture(Optional<LpSnapshot> lastSnapshot, int lp, String tier, String rank, Instant now) {
         if (lastSnapshot.isEmpty()) {
             return true;
         }
@@ -70,7 +72,7 @@ public class LpSnapshot {
         boolean changed = last.getLp() != lp
                 || !Objects.equals(last.getTier(), tier)
                 || !Objects.equals(last.getRank(), rank);
-        boolean stale = last.getTimestamp().isBefore(Instant.now().minus(DAILY_GRANULARITY));
+        boolean stale = last.getTimestamp().isBefore(now.minus(DAILY_GRANULARITY));
         return changed || stale;
     }
 }
