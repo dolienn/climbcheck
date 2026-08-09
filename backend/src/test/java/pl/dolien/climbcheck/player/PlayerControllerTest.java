@@ -49,6 +49,8 @@ class PlayerControllerTest {
 
     @MockitoBean
     private PlayerService playerService;
+    @MockitoBean
+    private MatchInsightsService matchInsightsService;
 
     @Test
     void addPlayer_shouldReturn201WithPlayer() throws Exception {
@@ -221,7 +223,7 @@ class PlayerControllerTest {
 
     @Test
     void getRecentMatches_shouldReturn200WithMatchesAndStreak() throws Exception {
-        when(playerService.getRecentMatches(anyString(), anyLong()))
+        when(matchInsightsService.getRecentMatches(anyString(), anyLong()))
                 .thenReturn(new PlayerMatchesResponse(
                         List.of(new PlayerMatchResponse("Yasuo", 157, false, 2, 12, 4, 201,
                                 1983, 1700000000000L, "MIDDLE", "SOLO", 20)),
@@ -243,7 +245,7 @@ class PlayerControllerTest {
 
     @Test
     void getRecentMatches_shouldReturn404WhenPlayerNotFound() throws Exception {
-        when(playerService.getRecentMatches(anyString(), anyLong()))
+        when(matchInsightsService.getRecentMatches(anyString(), anyLong()))
                 .thenThrow(new PlayerNotFoundException("Player not found: 99"));
 
         mockMvc.perform(get("/api/dashboards/{token}/players/{playerId}/matches", TOKEN, 99L))
