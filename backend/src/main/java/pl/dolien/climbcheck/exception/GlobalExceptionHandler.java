@@ -61,6 +61,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RestClientResponseException.class)
     public ResponseEntity<ApiError> handleRiotApiError(RestClientResponseException ex) {
+        // An invalid/expired Riot API key is an operator problem, not a client one — a
+        // distinct message makes it recognizable (dev keys expire every 24h) while the
+        // status stays 502. Everything else exposes only the status code, never details.
+        if (ex.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(new ApiError("Riot API key invalid or expired"));
+        }
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new ApiError("Riot API error: " + ex.getStatusCode()));
     }

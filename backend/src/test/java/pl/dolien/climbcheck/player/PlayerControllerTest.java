@@ -3,7 +3,10 @@ package pl.dolien.climbcheck.player;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import pl.dolien.climbcheck.exception.DashboardNotFoundException;
@@ -178,6 +181,32 @@ class PlayerControllerTest {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().string("Retry-After", "30"))
                 .andExpect(jsonPath("$.message").value(containsString("retry after 30s")));
+    }
+
+    @Test
+    void addPlayer_shouldReturn502WithKeyHintWhenRiotKeyInvalid() throws Exception {
+        when(playerService.addPlayer(anyString(), any(AddPlayerRequest.class), nullable(String.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+        mockMvc.perform(post("/api/dashboards/{token}/players", TOKEN)
+                        .header("X-Admin-Token", "admin-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.message").value("Riot API key invalid or expired"));
+    }
+
+    @Test
+    void addPlayer_shouldReturn502WithStatusCodeWhenRiotFails() throws Exception {
+        when(playerService.addPlayer(anyString(), any(AddPlayerRequest.class), nullable(String.class)))
+                .thenThrow(new HttpServerErrorException(HttpStatus.BAD_GATEWAY));
+
+        mockMvc.perform(post("/api/dashboards/{token}/players", TOKEN)
+                        .header("X-Admin-Token", "admin-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.message").value("Riot API error: 502 BAD_GATEWAY"));
     }
 
     @Test
