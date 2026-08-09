@@ -1,6 +1,6 @@
 package pl.dolien.climbcheck.player;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import pl.dolien.climbcheck.dashboard.Dashboard;
 import pl.dolien.climbcheck.dashboard.DashboardRepository;
