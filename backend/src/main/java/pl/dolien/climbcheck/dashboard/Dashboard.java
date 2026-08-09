@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static jakarta.persistence.CascadeType.ALL;
-
 @Entity
 @Getter
 public class Dashboard {
@@ -29,7 +27,12 @@ public class Dashboard {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @OneToMany(mappedBy = "dashboard", cascade = ALL, orphanRemoval = true)
+    /**
+     * Inverse side of TrackedPlayer.dashboard — kept for the bidirectional mapping.
+     * The app never navigates it: player CRUD goes through repositories, and deletion
+     * is cascaded by the database (ON DELETE CASCADE), so no JPA cascade config is needed.
+     */
+    @OneToMany(mappedBy = "dashboard")
     private List<TrackedPlayer> players = new ArrayList<>();
 
     protected Dashboard() {} // JPA
