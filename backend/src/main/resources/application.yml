@@ -46,6 +46,10 @@ app:
     # every refresh (saves the dev-key rate limit)
     match-ttl: 60m
     match-ids-ttl: 10m
+  league-cache:
+    # short TTL for league-v4 (current rank/LP): every dashboard GET does one call per
+    # player, so a 60s cache absorbs refresh bursts while staying "live enough"
+    league-ttl: 60s
   rate-limit:
     # protecting our own API from dashboard-token scraping: sliding window per IP
     # (last X-Forwarded-For entry from the trusted proxy — Caddy in prod — or remoteAddr);

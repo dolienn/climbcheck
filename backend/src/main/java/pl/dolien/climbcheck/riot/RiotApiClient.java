@@ -58,11 +58,20 @@ public class RiotApiClient {
     private final Cache<String, RiotMatchResponse> matchCache;
     private final Cache<String, List<String>> matchIdsCache;
 
+    /**
+     * Short-lived cache of league-v4 entries. Every dashboard GET does one league-v4 call
+     * per player; with the frontend refreshing every 5 minutes that can pile up on a dev
+     * key. A 60s TTL keeps the ranking "live enough" while cutting repeat calls during a
+     * refresh burst.
+     */
+    private final Cache<String, RiotLeagueEntryResponse> leagueCache;
+
     public RiotApiClient(@Value("${riot.api-key}") String apiKey,
                          @Value("${riot.base-url:" + DEFAULT_BASE_URL + "}") String baseUrl,
                          RestClient restClient,
                          @Value("${app.match-cache.match-ttl:60m}") Duration matchTtl,
-                         @Value("${app.match-cache.match-ids-ttl:10m}") Duration matchIdsTtl) {
+                         @Value("${app.match-cache.match-ids-ttl:10m}") Duration matchIdsTtl,
+                         @Value("${app.league-cache.league-ttl:60s}") Duration leagueTtl) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.restClient = restClient;
@@ -73,6 +82,10 @@ public class RiotApiClient {
         this.matchIdsCache = Caffeine.newBuilder()
                 .maximumSize(10_000)
                 .expireAfterWrite(matchIdsTtl)
+                .build();
+        this.leagueCache = Caffeine.newBuilder()
+                .maximumSize(10_000)
+                .expireAfterWrite(leagueTtl)
                 .build();
     }
 
@@ -96,6 +109,11 @@ public class RiotApiClient {
     }
 
     public RiotLeagueEntryResponse getLeagueEntry(RiotRegion region, String puuid) {
+        String key = region.getPlatformRouting() + ":" + puuid;
+        return leagueCache.get(key, ignored -> fetchLeagueEntry(region, puuid));
+    }
+
+    private RiotLeagueEntryResponse fetchLeagueEntry(RiotRegion region, String puuid) {
         RiotLeagueEntryResponse[] entries = restClient.get()
                 .uri(url(region.getPlatformRouting(), LEAGUE_V4_PATH), puuid)
                 .header("X-Riot-Token", apiKey)

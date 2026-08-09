@@ -36,7 +36,7 @@ class RiotApiClientTest {
         riotApiClient = new RiotApiClient(API_KEY,
                 "https://{routing}.api.riotgames.com",
                 builder.build(),
-                Duration.ofMinutes(60), Duration.ofMinutes(10));
+                Duration.ofMinutes(60), Duration.ofMinutes(10), Duration.ofSeconds(60));
     }
 
     @Test
@@ -46,7 +46,7 @@ class RiotApiClientTest {
         RiotApiClient mockClient = new RiotApiClient(API_KEY,
                 "http://localhost:9099/{routing}",
                 builder.build(),
-                Duration.ofMinutes(60), Duration.ofMinutes(10));
+                Duration.ofMinutes(60), Duration.ofMinutes(10), Duration.ofSeconds(60));
         server.expect(requestTo("http://localhost:9099/europe/riot/account/v1/accounts/by-riot-id/Test/EUW"))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header("X-Riot-Token", API_KEY))
@@ -366,6 +366,48 @@ class RiotApiClientTest {
         assertThat(entry.tier()).isEqualTo("UNRANKED");
         assertThat(entry.leaguePoints()).isZero();
         server.verify();
+    }
+
+    @Test
+    void getLeagueEntry_shouldServeFromCacheOnSecondCall() {
+        server.expect(requestTo("https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/puuid-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Riot-Token", API_KEY))
+                .andRespond(withSuccess("""
+                        [{"queueType":"RANKED_SOLO_5x5","tier":"PLATINUM","rank":"I","leaguePoints":75,"wins":20,"losses":15}]
+                        """, MediaType.APPLICATION_JSON));
+
+        RiotLeagueEntryResponse first = riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123");
+        RiotLeagueEntryResponse second = riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123");
+
+        assertThat(second).isSameAs(first);
+        server.verify(); // one expected request = the second was served from cache
+    }
+
+    @Test
+    void getLeagueEntry_shouldNotCacheRateLimitFailure() {
+        server.expect(requestTo("https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/puuid-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Riot-Token", API_KEY))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
+                        .header("Retry-After", "5"));
+        server.expect(requestTo("https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/puuid-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Riot-Token", API_KEY))
+                .andRespond(withSuccess("""
+                        [{"queueType":"RANKED_SOLO_5x5","tier":"PLATINUM","rank":"I","leaguePoints":75,"wins":20,"losses":15}]
+                        """, MediaType.APPLICATION_JSON));
+
+        // 429 is NOT cached: the first call throws, the second hits the server again and succeeds
+        assertThatThrownBy(() -> riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
+                .isInstanceOf(RiotRateLimitException.class)
+                .satisfies(ex -> assertThat(((RiotRateLimitException) ex).getRetryAfter())
+                        .isEqualTo(Duration.ofSeconds(5)));
+
+        RiotLeagueEntryResponse second = riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123");
+
+        assertThat(second.tier()).isEqualTo("PLATINUM");
+        server.verify(); // two requests = the failure was not cached
     }
 
     @Test
