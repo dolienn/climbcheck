@@ -89,6 +89,9 @@ public class PlayerService {
         return playerMapper.toResponse(player, league, history, league.winrate(), league.totalGames());
     }
 
+    // readOnly: the ownership check below touches the lazy dashboard association, which
+    // needs an open transaction (open-in-view is disabled)
+    @Transactional(readOnly = true)
     public List<LpSnapshotResponse> getLpHistory(String dashboardToken, Long playerId) {
         Dashboard dashboard = dashboardRepository.findByToken(dashboardToken)
                 .orElseThrow(() -> new DashboardNotFoundException("Dashboard not found for token: " + dashboardToken));
@@ -122,6 +125,9 @@ public class PlayerService {
         playerRepository.delete(player);
     }
 
+    // readOnly: the ownership check below touches the lazy dashboard association, which
+    // needs an open transaction (open-in-view is disabled)
+    @Transactional(readOnly = true)
     public PlayerMatchesResponse getRecentMatches(String dashboardToken, Long playerId) {
         Dashboard dashboard = dashboardRepository.findByToken(dashboardToken)
                 .orElseThrow(() -> new DashboardNotFoundException("Dashboard not found for token: " + dashboardToken));

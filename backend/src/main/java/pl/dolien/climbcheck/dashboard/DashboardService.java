@@ -52,6 +52,10 @@ public class DashboardService {
                 dashboard.getToken(), dashboard.getAdminToken(), dashboard.getCreatedAt());
     }
 
+    // Transactional even though it's a GET: the LP history grouping touches the lazy
+    // player association of each snapshot, and the opportunistic snapshot write below
+    // commits with the read (open-in-view is disabled).
+    @Transactional
     public DashboardResponse getDashboard(String token) {
         Dashboard dashboard = dashboardRepository.findByToken(token)
                 .orElseThrow(() -> new DashboardNotFoundException("Dashboard not found for token: " + token));

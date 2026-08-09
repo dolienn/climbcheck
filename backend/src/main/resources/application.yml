@@ -13,6 +13,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    # explicit instead of the default true: entity → DTO mapping happens inside @Transactional
+    # service methods, so no need to keep the session open through the whole request
+    open-in-view: false
 
 management:
   endpoints:
