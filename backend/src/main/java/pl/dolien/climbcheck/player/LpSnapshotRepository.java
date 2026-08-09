@@ -10,8 +10,6 @@ public interface LpSnapshotRepository extends JpaRepository<LpSnapshot, Long> {
 
     List<LpSnapshot> findByPlayerIdOrderByTimestampAsc(Long playerId);
 
-    List<LpSnapshot> findByPlayerIdInOrderByTimestampAsc(List<Long> playerIds);
-
     /**
      * History from a given moment (chart window, e.g. 30 days) — instead of loading and
      * serializing the ENTIRE history (200+ points per player) on every dashboard GET.
