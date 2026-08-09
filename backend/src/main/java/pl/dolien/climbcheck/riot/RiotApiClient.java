@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -103,7 +102,7 @@ public class RiotApiClient {
                     throw new PlayerNotFoundException(
                             "Player not found: " + gameName + "#" + tagLine);
                 })
-                .onStatus(status -> status.value() == 429, this::throwRateLimitException)
+                .onStatus(status -> status.value() == 429, (request, response) -> throwRateLimitException(response))
                 .body(RiotAccountResponse.class)
                 .puuid();
     }
@@ -118,7 +117,7 @@ public class RiotApiClient {
                 .uri(url(region.getPlatformRouting(), LEAGUE_V4_PATH), puuid)
                 .header("X-Riot-Token", apiKey)
                 .retrieve()
-                .onStatus(status -> status.value() == 429, this::throwRateLimitException)
+                .onStatus(status -> status.value() == 429, (request, response) -> throwRateLimitException(response))
                 .body(RiotLeagueEntryResponse[].class);
 
         return Arrays.stream(entries)
@@ -136,7 +135,7 @@ public class RiotApiClient {
                     throw new PlayerNotFoundException(
                             "Summoner profile not found for puuid: " + puuid);
                 })
-                .onStatus(status -> status.value() == 429, this::throwRateLimitException)
+                .onStatus(status -> status.value() == 429, (request, response) -> throwRateLimitException(response))
                 .body(RiotSummonerResponse.class);
         return summoner.profileIconId();
     }
@@ -151,7 +150,7 @@ public class RiotApiClient {
                 .uri(url(region.getRegionalRouting(), MATCH_V5_IDS_PATH), puuid, count)
                 .header("X-Riot-Token", apiKey)
                 .retrieve()
-                .onStatus(status -> status.value() == 429, this::throwRateLimitException)
+                .onStatus(status -> status.value() == 429, (request, response) -> throwRateLimitException(response))
                 .body(String[].class);
         return List.of(ids);
     }
@@ -166,11 +165,11 @@ public class RiotApiClient {
                 .uri(url(region.getRegionalRouting(), MATCH_V5_PATH), matchId)
                 .header("X-Riot-Token", apiKey)
                 .retrieve()
-                .onStatus(status -> status.value() == 429, this::throwRateLimitException)
+                .onStatus(status -> status.value() == 429, (request, response) -> throwRateLimitException(response))
                 .body(RiotMatchResponse.class);
     }
 
-    private void throwRateLimitException(HttpRequest request, ClientHttpResponse response) throws IOException {
+    private void throwRateLimitException(ClientHttpResponse response) throws IOException {
         throw new RiotRateLimitException(
                 "Riot API rate limit exceeded",
                 parseRetryAfter(response.getHeaders().getFirst("Retry-After")),
