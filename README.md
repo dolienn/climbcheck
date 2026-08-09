@@ -64,10 +64,10 @@ climbcheck/
 │   └── src/main/resources/db/migration/   # schema + LP snapshots + indexes
 ├── frontend/         # Angular app (git submodule)
 ├── e2e/              # Playwright: full flow + rate-limit tests
-├── infra/            # docker-compose files (dev DB + production stack)
+├── infra/            # docker-compose (dev + prod) + DEPLOYMENT.md
+├── docs/             # screenshots (README + Open Graph)
 ├── CHANGELOG.md      # versioned release history (Keep a Changelog)
 ├── scripts/dev.sh    # one-command local stack (Postgres + backend + frontend)
-├── docs/DEPLOYMENT.md # production deployment guide (Riot key, DNS, HTTPS)
 └── .github/workflows/ # CI (backend + frontend + e2e) and the deploy job
 ```
 
@@ -107,7 +107,7 @@ trigger a **deploy** job (SSH → `docker compose up -d --build`).
 
 The app is live at **[https://climbcheck.dolien.pl](https://climbcheck.dolien.pl)**. Production
 runs on Docker Compose with **Caddy** handling automatic HTTPS (Let's Encrypt), SPA routing and
-security headers. See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the full guide: applying
+security headers. See **[infra/DEPLOYMENT.md](infra/DEPLOYMENT.md)** for the full guide: applying
 for a production Riot API key, DNS setup, server bootstrap and the CI deploy job.
 
 ## ⚠️ Disclaimer
