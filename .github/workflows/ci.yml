@@ -300,7 +300,8 @@ jobs:
       #   SSH_PORT    (default 22)
       #   DEPLOY_PATH (default /opt/climbcheck)
       #   APP_DOMAIN  (when set, we verify the public https://APP_DOMAIN after deploy)
-      # Server requirements: docker compose v2, rsync, .env in DEPLOY_PATH with      #   DATABASE_USERNAME / DATABASE_PASSWORD / RIOT_API_KEY (read by infra/docker-compose.prod.yml).
+      # Server requirements: docker compose v2, rsync, .env in DEPLOY_PATH with
+      #   DATABASE_USERNAME / DATABASE_PASSWORD / RIOT_API_KEY (read by infra/docker-compose.prod.yml).
       - name: Configure SSH key
         if: steps.ssh-check.outputs.configured == 'true'
         env:
