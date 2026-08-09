@@ -64,10 +64,11 @@ climbcheck/
 │   └── src/main/resources/db/migration/   # schema + LP snapshots + indexes
 ├── frontend/         # Angular app (git submodule)
 ├── e2e/              # Playwright: full flow + rate-limit tests
+├── infra/            # docker-compose files (dev DB + production stack)
 ├── CHANGELOG.md      # versioned release history (Keep a Changelog)
 ├── scripts/dev.sh    # one-command local stack (Postgres + backend + frontend)
 ├── docs/DEPLOYMENT.md # production deployment guide (Riot key, DNS, HTTPS)
-└── docker-compose.prod.yml  # production: Postgres + backend + Caddy
+└── .github/workflows/ # CI (backend + frontend + e2e) and the deploy job
 ```
 
 ## 🚀 Quick start (local dev)
@@ -85,7 +86,7 @@ Then open <http://localhost:4200>. The frontend proxies `/api` to the backend.
 Or run pieces manually:
 
 ```bash
-docker compose up -d db
+docker compose -f infra/docker-compose.yml up -d db
 cd backend && ./mvnw spring-boot:run            # http://localhost:8081
 cd frontend && npm install && npm start          # http://localhost:4200
 ```

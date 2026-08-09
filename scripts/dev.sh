@@ -4,7 +4,7 @@
 #
 #   Postgres (Docker, port 5433) → Backend (Spring Boot, port 8081) → Frontend (Angular, port 4200)
 #
-# Default ports are shifted vs docker-compose.yml (5432) and Spring Boot (8080),
+# Default ports are shifted vs infra/docker-compose.yml (5432) and Spring Boot (8080),
 # because these are often taken by other projects. They can be overridden:
 #
 #   DB_PORT=5433 BACKEND_PORT=8081 FRONTEND_PORT=4200 ./scripts/dev.sh
@@ -55,7 +55,7 @@ fi
 
 # --- 1. Postgres ---------------------------------------------------------------
 
-# Equivalent of the db service from docker-compose.yml, but with a host port override:
+# Equivalent of the db service from infra/docker-compose.yml, but with a host port override:
 # the default 5432 is often taken by other projects.
 db_up=0
 if docker ps -q -f name="$DB_CONTAINER" >/dev/null; then
