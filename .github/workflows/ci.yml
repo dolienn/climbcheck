@@ -252,7 +252,7 @@ jobs:
   # NOTE: job-level `if` cannot read secrets for push events (the workflow would be
   # rejected as invalid), so the SSH-secret check lives in the first step instead.
   deploy:
-    name: Deploy — climbcheck.com (SSH + docker compose)
+    name: Deploy — climbcheck.dolien.pl (SSH + docker compose)
     runs-on: ubuntu-latest
     # Only main and only after green CI (backend + frontend + e2e).
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -293,7 +293,7 @@ jobs:
           token: ${{ secrets.GH_PAT || github.token }}
 
       # Required secrets (Settings → Secrets and variables → Actions):
-      #   SSH_HOST — server address (e.g. climbcheck.com)
+      #   SSH_HOST — server address (e.g. climbcheck.dolien.pl)
       #   SSH_USER — SSH user (e.g. deploy)
       #   SSH_KEY  — private SSH key; the public one lives in ~/.ssh/authorized_keys on the server
       # Optional variables (Settings → Variables):

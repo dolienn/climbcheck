@@ -14,7 +14,7 @@ in a public product. The production key:
 
 1. Go to https://developer.riotgames.com → **Applications** → **Create New Application**.
 2. Fill in the product description: name (ClimbCheck), purpose (a public web app for
-   tracking solo queue rankings in a group of friends), domain (`climbcheck.com`),
+   tracking solo queue rankings in a group of friends), domain (`climbcheck.dolien.pl`),
    feature description (dashboard + LP leaderboard, charts, data from account-v1, league-v4, match-v5).
 3. Riot reviews the application (usually a few days). After approval the **production key**
    appears in the dashboard — different from the dev key, with a longer validity and higher limits.
