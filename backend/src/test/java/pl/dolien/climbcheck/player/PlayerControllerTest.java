@@ -120,6 +120,23 @@ class PlayerControllerTest {
     }
 
     @Test
+    void addPlayer_shouldAcceptUnicodeRiotId() throws Exception {
+        // Riot IDs allow accented letters in both the game name and the tag line
+        // (e.g. OłJeleń#jeleń) — validation must not reject them with a 400.
+        when(playerService.addPlayer(anyString(), any(AddPlayerRequest.class), nullable(String.class)))
+                .thenReturn(new PlayerResponse(1L, "OłJeleń", "jeleń", RiotRegion.EUNE, 7,
+                        "SILVER", "II", 15, null, null, null, null, List.of()));
+
+        mockMvc.perform(post("/api/dashboards/{token}/players", TOKEN)
+                        .header("X-Admin-Token", "admin-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"region":"EUNE","gameName":"OłJeleń","tagLine":"jeleń"}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void addPlayer_shouldReturn404WhenDashboardNotFound() throws Exception {
         when(playerService.addPlayer(anyString(), any(AddPlayerRequest.class), nullable(String.class)))
                 .thenThrow(new DashboardNotFoundException("Dashboard not found for token: " + TOKEN));
