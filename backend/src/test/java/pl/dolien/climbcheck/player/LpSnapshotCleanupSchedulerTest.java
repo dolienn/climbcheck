@@ -55,7 +55,7 @@ class LpSnapshotCleanupSchedulerTest {
     }
 
     @Test
-    void purgeOldSnapshots_shouldNotDeleteAnythingWhenCutoffIsInThePast() {
+    void purgeOldSnapshots_shouldCutOffAtMaxAgeInThePast() {
         // sanity: cutoff must be in the past (not before now)
         scheduler.purgeOldSnapshots();
 
