@@ -8,8 +8,11 @@ public record RiotLeagueEntryResponse(
         int wins,
         int losses
 ) {
+    /** The queue this entry describes — the only one the leaderboard tracks. */
+    public static final String RANKED_SOLO_5x5 = "RANKED_SOLO_5x5";
+
     public static RiotLeagueEntryResponse unranked() {
-        return new RiotLeagueEntryResponse("RANKED_SOLO_5x5", "UNRANKED", "", 0, 0, 0);
+        return new RiotLeagueEntryResponse(RANKED_SOLO_5x5, "UNRANKED", "", 0, 0, 0);
     }
 
     /**
