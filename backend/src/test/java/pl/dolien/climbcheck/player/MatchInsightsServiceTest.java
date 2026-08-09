@@ -35,6 +35,8 @@ import static org.mockito.Mockito.when;
 class MatchInsightsServiceTest {
 
     private static final String TOKEN = "dashboard-token";
+    private static final RiotLeagueEntryResponse LEAGUE_ENTRY =
+            new RiotLeagueEntryResponse("RANKED_SOLO_5x5", "GOLD", "III", 55, 10, 5);
 
     @Mock
     private PlayerRepository playerRepository;
@@ -53,20 +55,29 @@ class MatchInsightsServiceTest {
                 lpSnapshotRepository, new RiotRetryer(new RetryPolicy(3, 10, 1000)));
     }
 
-    @Test
-    void getRecentMatches_shouldOnlyIncludeRankedSoloMatchesOfThePlayer() {
+    private TrackedPlayer trackedPlayer() {
         Dashboard dashboard = Dashboard.create();
         ReflectionTestUtils.setField(dashboard, "id", 10L);
         TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
         ReflectionTestUtils.setField(player, "id", 1L);
+        stubOwnership(player);
+        return player;
+    }
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+    private void stubOwnership(TrackedPlayer player) {
+        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(player.getDashboard()));
+        when(playerRepository.findById(player.getId())).thenReturn(Optional.of(player));
+    }
+
+    @Test
+    void getRecentMatches_shouldOnlyIncludeRankedSoloMatchesOfThePlayer() {
+        TrackedPlayer player = trackedPlayer();
+
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_flex", "EUW1_ranked", "EUW1_other"));
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
         when(riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
-                .thenReturn(new RiotLeagueEntryResponse("RANKED_SOLO_5x5", "GOLD", "III", 55, 10, 5));
+                .thenReturn(LEAGUE_ENTRY);
 
         RiotMatchResponse flex = new RiotMatchResponse(new RiotMatchResponse.Info(100L, 1800L, 440,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Zed", 238, true, 5, 1, 9, 180, 0, "MIDDLE", "SOLO"))));
@@ -94,24 +105,19 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldCountJungleMonstersInCs() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        trackedPlayer();
 
         // jungler: 8 lane minions + 200 jungle monsters → CS must be 208, not 8
         RiotMatchResponse ranked = new RiotMatchResponse(new RiotMatchResponse.Info(
                 200L, 2400L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "LeeSin", 234, true, 5, 2, 6, 8, 200, "JUNGLE", "NONE"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
         when(riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
-                .thenReturn(new RiotLeagueEntryResponse("RANKED_SOLO_5x5", "GOLD", "III", 55, 10, 5));
+                .thenReturn(LEAGUE_ENTRY);
 
         List<PlayerMatchResponse> matches = matchInsightsService.getRecentMatches(TOKEN, 1L).matches();
 
@@ -121,20 +127,15 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldRetryAfterRateLimit() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        trackedPlayer();
         RiotMatchResponse ranked = new RiotMatchResponse(new RiotMatchResponse.Info(200L, 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, false, 2, 12, 4, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
         when(riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
-                .thenReturn(new RiotLeagueEntryResponse("RANKED_SOLO_5x5", "GOLD", "III", 55, 10, 5));
+                .thenReturn(LEAGUE_ENTRY);
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked"))
                 .thenThrow(new RiotRateLimitException("rate limited", Duration.ofMillis(5), Map.of()))
                 .thenReturn(ranked);
@@ -176,10 +177,7 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldAttributeLpDeltaToSingleMatchInSnapshotInterval() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        TrackedPlayer player = trackedPlayer();
 
         Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot before = LpSnapshot.create(player, 100, "GOLD", "IV");
@@ -191,8 +189,6 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(1800).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -208,10 +204,7 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldAttributeCombinedDeltaToNewestMatchInInterval() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        TrackedPlayer player = trackedPlayer();
 
         Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot before = LpSnapshot.create(player, 100, "GOLD", "IV");
@@ -226,8 +219,6 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(2400).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Zed", 238, true, 5, 1, 9, 180, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_newer", "EUW1_older"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_newer")).thenReturn(newer);
@@ -248,10 +239,7 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldAttributeLiveLpDeltaToMatchAfterLastSnapshot() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        TrackedPlayer player = trackedPlayer();
 
         Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot snapshot = LpSnapshot.create(player, 100, "GOLD", "IV");
@@ -261,8 +249,6 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(7200).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -279,17 +265,12 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldLeaveLpChangeNullWhenNoSnapshots() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        trackedPlayer();
 
         RiotMatchResponse ranked = new RiotMatchResponse(new RiotMatchResponse.Info(
                 1_000_000L, 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -305,10 +286,7 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldDegradeGracefullyWhenLiveLeagueRateLimited() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        TrackedPlayer player = trackedPlayer();
 
         Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot snapshot = LpSnapshot.create(player, 100, "GOLD", "IV");
@@ -318,8 +296,6 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(7200).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -336,10 +312,7 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldAttributeMatchEndingExactlyAtSnapshotToFollowingInterval() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        TrackedPlayer player = trackedPlayer();
 
         Instant t0 = Instant.parse("2026-07-01T12:00:00Z");
         LpSnapshot before = LpSnapshot.create(player, 100, "GOLD", "IV");
@@ -352,8 +325,6 @@ class MatchInsightsServiceTest {
                 t0.plusSeconds(3600).toEpochMilli(), 1983L, 420,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Yasuo", 157, true, 6, 2, 8, 201, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_ranked"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_ranked")).thenReturn(ranked);
@@ -383,24 +354,19 @@ class MatchInsightsServiceTest {
     }
 
     private PlayerMatchesResponse matchesWithStreak(List<RiotMatchResponse> matchesNewestFirst) {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        trackedPlayer();
 
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < matchesNewestFirst.size(); i++) {
             ids.add("EUW1_" + (matchesNewestFirst.size() - i));
         }
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100)).thenReturn(ids);
         for (int i = 0; i < matchesNewestFirst.size(); i++) {
             when(riotApiClient.getMatch(RiotRegion.EUW, ids.get(i))).thenReturn(matchesNewestFirst.get(i));
         }
         when(lpSnapshotRepository.findByPlayerIdOrderByTimestampAsc(1L)).thenReturn(List.of());
         when(riotApiClient.getLeagueEntry(RiotRegion.EUW, "puuid-123"))
-                .thenReturn(new RiotLeagueEntryResponse("RANKED_SOLO_5x5", "GOLD", "III", 55, 10, 5));
+                .thenReturn(LEAGUE_ENTRY);
         return matchInsightsService.getRecentMatches(TOKEN, 1L);
     }
 
@@ -506,18 +472,13 @@ class MatchInsightsServiceTest {
 
     @Test
     void getRecentMatches_shouldReturnEmptyTopChampionsWhenNoRankedGames() {
-        Dashboard dashboard = Dashboard.create();
-        ReflectionTestUtils.setField(dashboard, "id", 10L);
-        TrackedPlayer player = TrackedPlayer.create(dashboard, RiotRegion.EUW, "Test", "EUW", "puuid-123", 0);
-        ReflectionTestUtils.setField(player, "id", 1L);
+        trackedPlayer();
 
         // only flex (queue 440) — no ranked games → streak null, empty list
         RiotMatchResponse flex = new RiotMatchResponse(new RiotMatchResponse.Info(
                 100L, 1983L, 440,
                 List.of(new RiotMatchResponse.Participant("puuid-123", "Zed", 238, true, 5, 1, 9, 180, 0, "MIDDLE", "SOLO"))));
 
-        when(dashboardRepository.findByToken(TOKEN)).thenReturn(Optional.of(dashboard));
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
         when(riotApiClient.getRecentMatchIds(RiotRegion.EUW, "puuid-123", 100))
                 .thenReturn(List.of("EUW1_flex"));
         when(riotApiClient.getMatch(RiotRegion.EUW, "EUW1_flex")).thenReturn(flex);
