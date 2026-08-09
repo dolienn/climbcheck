@@ -95,6 +95,42 @@ class RateLimitWebMvcTest {
     }
 
     @Test
+    void spoofedFirstForwardedForEntry_shouldNotBypassTheLimit() throws Exception {
+        when(dashboardService.getDashboard(anyString())).thenReturn(dashboard());
+
+        // The client can send its own X-Forwarded-For; the trusted proxy (Caddy) appends the
+        // real IP as the LAST entry. Only the last entry counts, so rotating the first value
+        // (a spoof attempt) must NOT grant a fresh budget.
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(get("/api/dashboards/token")
+                            .header("X-Forwarded-For", "1.2.3.4, 10.0.0.40"))
+                    .andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/dashboards/token")
+                        .header("X-Forwarded-For", "9.9.9.9, 10.0.0.40"))
+                .andExpect(status().isTooManyRequests());
+
+        // A different real IP (different last entry) has its own budget.
+        mockMvc.perform(get("/api/dashboards/token")
+                        .header("X-Forwarded-For", "5.5.5.5, 10.0.0.41"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void withoutForwardedFor_shouldFallBackToRemoteAddr() throws Exception {
+        when(dashboardService.getDashboard(anyString())).thenReturn(dashboard());
+
+        // No X-Forwarded-For (e.g. local dev without a proxy) → remoteAddr (127.0.0.1 in
+        // MockMvc) is the key; the limit applies to it like to any other IP.
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(get("/api/dashboards/token"))
+                    .andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/dashboards/token"))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
     void dashboardCreate_shouldHaveStricterLimitThanDefaultGroup() throws Exception {
         when(dashboardService.createDashboard()).thenReturn(createdDashboard());
 
