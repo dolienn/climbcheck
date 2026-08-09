@@ -20,7 +20,6 @@ import java.util.Deque;
 public class RateLimiter {
 
     public static final String DASHBOARD_CREATE_GROUP = "dashboard-create";
-    private static final String DEFAULT_GROUP = "default";
 
     private final Cache<String, Deque<Long>> counters;
     private final Duration window;
