@@ -45,11 +45,20 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 && "/api/dashboards".equals(request.getRequestURI());
     }
 
-    /** Client IP: first X-Forwarded-For entry (set by nginx in prod) or remoteAddr. */
+    /**
+     * Client IP: the last X-Forwarded-For entry (the one appended by the trusted proxy,
+     * Caddy in prod) or remoteAddr when the header is absent. The FIRST entry is
+     * client-controlled — the caller can send an arbitrary X-Forwarded-For, so trusting
+     * it would let a scraper rotate values and bypass the limiter entirely.
+     */
     private String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+            String[] entries = forwarded.split(",");
+            String last = entries[entries.length - 1].trim();
+            if (!last.isEmpty()) {
+                return last;
+            }
         }
         return request.getRemoteAddr();
     }

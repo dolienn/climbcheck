@@ -48,8 +48,8 @@ app:
     match-ids-ttl: 10m
   rate-limit:
     # protecting our own API from dashboard-token scraping: sliding window per IP
-    # (X-Forwarded-For from nginx or remoteAddr); dashboard creation has its own,
-    # lower pool, because every POST generates a new token
+    # (last X-Forwarded-For entry from the trusted proxy — Caddy in prod — or remoteAddr);
+    # dashboard creation has its own, lower pool, because every POST generates a new token
     enabled: true
     window: 60s
     max-requests-per-ip: 120
